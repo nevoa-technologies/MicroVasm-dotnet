@@ -7,7 +7,26 @@ namespace MicroVASMDotNet.Console
     {
         static void Main(string[] args)
         {
-            string sourceCode = File.ReadAllText("main.vasm");
+            string fileName = "main.vasm";
+
+            if (args.Length > 0)
+            {
+                if (args.Length == 1)
+                    fileName = args[0];
+                else
+                {
+                    System.Console.WriteLine("Received {0} arguments. It can only receive one file.", args.Length);
+                    return;
+                }
+            }
+
+            if (!File.Exists(fileName))
+            {
+                System.Console.WriteLine("File '{0}' not found.", fileName);
+                return;
+            }
+
+            string sourceCode = File.ReadAllText(fileName);
 
             using (var data = MicroVASM.Prepare(sourceCode))
             {
