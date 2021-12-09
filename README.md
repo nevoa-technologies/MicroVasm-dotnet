@@ -1,5 +1,5 @@
 # MicroVASM .NET
-A .NET implementation of the [MicroVASM](https://github.com/nevoa-dev/micro-vasm) assembly language.
+A .NET compiler implementation of the [MicroVASM](https://github.com/nevoa-dev/micro-vasm) assembly language.
 
 # Installation and Usage
 - Requires .NET Core 3.1
