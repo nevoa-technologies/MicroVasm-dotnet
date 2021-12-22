@@ -46,6 +46,7 @@ namespace MicroVASMDotNET.Compilers
             /* END is handled on PreProcessorDefinitions. */
             DeclareInstruction<InstructionCMP>();
             DeclareInstruction<InstructionJMP>();
+            DeclareInstruction<InstructionJNZ>();
             DeclareInstruction<InstructionCALL>();
             DeclareInstruction<InstructionAND>();
             DeclareInstruction<InstructionNOT>();
@@ -112,6 +113,11 @@ namespace MicroVASMDotNET.Compilers
                 {
                     return true;
                 }
+            }
+            else if (name.Equals("SP"))
+            {
+                register = 5;
+                return true;
             }
 
             register = 0;

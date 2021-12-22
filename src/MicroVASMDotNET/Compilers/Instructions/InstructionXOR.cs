@@ -8,6 +8,6 @@ namespace MicroVASMDotNET.Compilers.Instructions
     {
         public override string Name => "XOR";
 
-        public override byte OPCode => 23;
+        public override byte OPCode => 24;
     }
 }

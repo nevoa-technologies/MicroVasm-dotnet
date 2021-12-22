@@ -8,6 +8,6 @@ namespace MicroVASMDotNET.Compilers.Instructions
     {
         public override string Name => "AND";
 
-        public override byte OPCode => 18;
+        public override byte OPCode => 19;
     }
 }

@@ -9,7 +9,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
     {
         public string Name => "CALL";
 
-        public byte OPCode => 17;
+        public byte OPCode => 18;
 
 
         public byte[] Generate(ICompiler compiler, VASMInstructionData instruction)

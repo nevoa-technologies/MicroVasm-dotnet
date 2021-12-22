@@ -8,6 +8,6 @@ namespace MicroVASMDotNET.Compilers.Instructions
     {
         public override string Name => "LSR";
 
-        public override byte OPCode => 22;
+        public override byte OPCode => 23;
     }
 }

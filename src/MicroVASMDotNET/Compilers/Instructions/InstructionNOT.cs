@@ -8,7 +8,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
     public class InstructionNOT : IInstruction, IInstruction<ISpecRegisters>
     {
         public string Name => "NOT";
-        public byte OPCode => 20;
+        public byte OPCode => 21;
 
         public virtual byte[] Generate(ICompiler compiler, VASMInstructionData instruction)
         {
