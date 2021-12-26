@@ -87,8 +87,10 @@ namespace MicroVASMDotNET.Compilers
         }
 
 
-        public byte[] ParseValue(string s, ValueType type)
+        public byte[] ParseValue(string s, ValueType type, out bool isNegativeInt)
         {
+            isNegativeInt = false;
+
             byte[] bytes;
 
             if (s.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
@@ -115,6 +117,11 @@ namespace MicroVASMDotNET.Compilers
                 }
                 else
                 {
+                    if (s.StartsWith("-"))
+                    {
+                        isNegativeInt = true;
+                    }
+
                     if (long.TryParse(s, out long result))
                         bytes = BitConverter.GetBytes(result).AsLittleEndian();
                     else
@@ -126,16 +133,19 @@ namespace MicroVASMDotNET.Compilers
         }
 
 
-        public byte[] FitDataInSize(VASMInstructionData instruction, byte[] data, int size, bool showWarnings = true)
+        public byte[] FitDataInSize(VASMInstructionData instruction, byte[] data, bool isNegativeInt, int size, bool showWarnings = true)
         {
             List<byte> finalBytes = new List<byte>(data);
 
             while (finalBytes.Count < size)
-                finalBytes.Add(0);
+                if (isNegativeInt)
+                    finalBytes.Add(0xFF);
+                else
+                    finalBytes.Add(0x00);
 
             for (int i = size; i < finalBytes.Count; i++)
             {
-                if (finalBytes[i] != 0)
+                if ((isNegativeInt && finalBytes[i] != 0xFF) || (!isNegativeInt && finalBytes[i] != 0))
                 {
                     if (showWarnings)
                         ThrowWarning(instruction, "Value is bigger than its storage size.");

@@ -38,7 +38,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
                 return new byte[] { 0 };
             }
 
-            byte[] value = compiler.ParseValue(instruction.Parameters[1], ValueType.Integer);
+            byte[] value = compiler.ParseValue(instruction.Parameters[1], ValueType.Integer, out bool isNegativeInt);
 
             if (value == null)
             {
@@ -53,7 +53,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
             }
             else
             {
-                value = compiler.FitDataInSize(instruction, value, 4, false);
+                value = compiler.FitDataInSize(instruction, value, isNegativeInt, size, false);
             }
 
             List<byte> result = new List<byte>();

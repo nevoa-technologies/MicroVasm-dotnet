@@ -154,9 +154,10 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
                 }
 
                 byte[] bytes = null;
+                bool isNegativeInt = false;
 
                 if (instruction.Parameters.Count == 3)
-                    bytes = compiler.ParseValue(instruction.Parameters[2], definition.Type);
+                    bytes = compiler.ParseValue(instruction.Parameters[2], definition.Type, out isNegativeInt);
 
                 if (bytes == null)
                 {
@@ -164,7 +165,7 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
                     return;
                 }
 
-                definition.Value = compiler.FitDataInSize(instruction, bytes, definition.Size);
+                definition.Value = compiler.FitDataInSize(instruction, bytes, isNegativeInt, definition.Size);
 
                 if (scopesStack.Peek().DefinitionsCount > 0)
                     definition.Index = scopesStack.Peek().LastDefinition.Index + scopesStack.Peek().LastDefinition.Size;

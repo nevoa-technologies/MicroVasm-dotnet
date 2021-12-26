@@ -26,11 +26,11 @@ namespace MicroVASMDotNET.Compilers.Instructions
             {
                 if (types.GetTypeSize(instruction.Parameters[1], out byte size) && types.GetTypeValue(instruction.Parameters[1], out ValueType type))
                 {
-                    byte[] bytes = compiler.ParseValue(instruction.Parameters[2], type);
+                    byte[] bytes = compiler.ParseValue(instruction.Parameters[2], type, out bool isNegativeInt);
 
                     if (bytes != null)
                     {
-                        bytes = compiler.FitDataInSize(instruction, bytes, size);
+                        bytes = compiler.FitDataInSize(instruction, bytes, isNegativeInt, size);
 
                         List<byte> result = new List<byte>();
                         result.Add(OPCode);
