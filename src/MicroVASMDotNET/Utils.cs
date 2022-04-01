@@ -13,5 +13,16 @@ namespace MicroVASMDotNET
 
             return bytes;
         }
+
+
+        public static byte[] ToByteArray(this string value)
+        {
+            List<byte> bytes = new List<byte>();
+
+            foreach (char c in value)
+                bytes.Add((byte)c);
+
+            return bytes.ToArray();
+        }
     }
 }

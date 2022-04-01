@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
 
 namespace MicroVASMDotNET.Compilers
 {
@@ -108,6 +110,7 @@ namespace MicroVASMDotNET.Compilers
             if (s.StartsWith("'") && s.EndsWith("'") && s.Length > 2)
             {
                 string c = s.Remove(s.Length - 1, 1).Remove(0, 1);
+                c = Regex.Unescape(c);
 
                 if (c.Length == 1)
                     bytes = new byte[1] { (byte)c[0] };
@@ -117,7 +120,8 @@ namespace MicroVASMDotNET.Compilers
             else if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length > 2)
             {
                 string c = s.Remove(s.Length - 1, 1).Remove(0, 1);
-                bytes = Encoding.UTF8.GetBytes(c);
+                c = Regex.Unescape(c);
+                bytes = c.ToByteArray();
             }
             else if (s.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
                 bytes = BitConverter.GetBytes(long.Parse(s.Substring(2), NumberStyles.HexNumber)).AsLittleEndian();
