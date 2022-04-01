@@ -24,7 +24,8 @@ namespace MicroVASMDotNET.Compilers.Instructions
                 return new byte[] { 0 };
             }
 
-            byte register, size;
+            byte register;
+            int size;
 
             if (!registers.GetRegister(instruction.Parameters[0], out register))
             {
@@ -35,6 +36,12 @@ namespace MicroVASMDotNET.Compilers.Instructions
             if (!types.GetTypeSize(instruction.Parameters[2], out size))
             {
                 compiler.ThrowError(instruction, "LDS instruction must have a type in the third parameter. The third parameter is not a type or a size.");
+                return new byte[] { 0 };
+            }
+
+            if (size > compiler.MaxTypeSize)
+            {
+                compiler.ThrowError(instruction, "LDS instruction must have a type with a size not bigger than " + compiler.MaxTypeSize + ".");
                 return new byte[] { 0 };
             }
 
@@ -60,7 +67,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
             result.Add(OPCode);
             result.Add(register);
             result.AddRange(value);
-            result.Add(size);
+            result.Add((byte) size);
 
             return result.ToArray();
         }

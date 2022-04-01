@@ -4,7 +4,8 @@ namespace MicroVASMDotNET.Compilers
 {
     public interface ICompiler
     {
-        byte[] Generate();
+        byte MaxTypeSize { get; }
+        CompilerResult Generate();
         void ThrowError(VASMInstructionData instruction, string message);
         void ThrowWarning(VASMInstructionData instruction, string message);
         UInt32 CurrentBytecodeLength { get; }
@@ -15,8 +16,6 @@ namespace MicroVASMDotNET.Compilers
 
     public enum ValueType
     {
-        Integer,
-        Float,
-        Double
+        Integer
     }
 }

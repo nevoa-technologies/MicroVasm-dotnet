@@ -30,8 +30,8 @@ namespace MicroVASMDotNet.Console
 
             using (var data = MicroVASM.Prepare(sourceCode))
             {
-                byte[] result = MicroVASM.Compile(data, MicroVASMVersion.V1_0);
-                File.WriteAllBytes("result.bin", result);
+                CompilerResult result = MicroVASM.Compile(data, MicroVASMVersion.V1_0, true);
+                File.WriteAllBytes("result.bin", result.Result);
             }
         }
     }

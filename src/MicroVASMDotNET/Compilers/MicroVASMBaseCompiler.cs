@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace MicroVASMDotNET.Compilers
 {
@@ -17,7 +18,15 @@ namespace MicroVASMDotNET.Compilers
         public abstract UInt32 CurrentBytecodeLength { get; }
 
 
-        private List<MicroVASMCompilerError> CompileErrors { get; } = new List<MicroVASMCompilerError>();
+        protected List<MicroVASMCompilerError> CompileErrors { get; } = new List<MicroVASMCompilerError>();
+
+        private byte maxTypeSize = 0;
+        public byte MaxTypeSize => maxTypeSize;
+
+        public MicroVASMBaseCompiler(bool is64Bit)
+        {
+            maxTypeSize = is64Bit ? (byte)8 : (byte)4;
+        }
 
 
         protected void DeclareInstruction<T>() where T : IInstruction, new()
@@ -72,13 +81,16 @@ namespace MicroVASMDotNET.Compilers
         protected abstract void ProcessInstruction(VASMInstructionData instruction, bool IsPreProcessing);
 
 
-        public abstract byte[] Generate();
+        public abstract CompilerResult Generate();
 
 
         public void ThrowError(VASMInstructionData instruction, string message)
         {
             CompileErrors.Add(new MicroVASMCompilerError(instruction, message));
-            Console.WriteLine("Error: " + message + " Line: " + instruction.RealLine);
+            if (instruction != null)
+                Console.WriteLine("Error: " + message + " Line: " + instruction.RealLine);
+            else
+                Console.WriteLine("Error: " + message);
         }
 
         public void ThrowWarning(VASMInstructionData instruction, string message)
@@ -93,7 +105,21 @@ namespace MicroVASMDotNET.Compilers
 
             byte[] bytes;
 
-            if (s.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
+            if (s.StartsWith("'") && s.EndsWith("'") && s.Length > 2)
+            {
+                string c = s.Remove(s.Length - 1, 1).Remove(0, 1);
+
+                if (c.Length == 1)
+                    bytes = new byte[1] { (byte)c[0] };
+                else
+                    return null;
+            }
+            else if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length > 2)
+            {
+                string c = s.Remove(s.Length - 1, 1).Remove(0, 1);
+                bytes = Encoding.UTF8.GetBytes(c);
+            }
+            else if (s.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
                 bytes = BitConverter.GetBytes(long.Parse(s.Substring(2), NumberStyles.HexNumber)).AsLittleEndian();
             else if (s.StartsWith("0o", StringComparison.InvariantCultureIgnoreCase))
                 bytes = BitConverter.GetBytes((long)Convert.ToInt64(s.Substring(2), 8)).AsLittleEndian();
@@ -101,6 +127,7 @@ namespace MicroVASMDotNET.Compilers
                 bytes = BitConverter.GetBytes((long)Convert.ToInt64(s.Substring(2), 2)).AsLittleEndian();
             else
             {
+                /*
                 if (type == ValueType.Float)
                 {
                     if (float.TryParse(s, out float result))
@@ -116,7 +143,7 @@ namespace MicroVASMDotNET.Compilers
                         return null;
                 }
                 else
-                {
+                {*/
                     if (s.StartsWith("-"))
                     {
                         isNegativeInt = true;
@@ -126,7 +153,7 @@ namespace MicroVASMDotNET.Compilers
                         bytes = BitConverter.GetBytes(result).AsLittleEndian();
                     else
                         return null;
-                }
+                //}
             }
 
             return bytes;

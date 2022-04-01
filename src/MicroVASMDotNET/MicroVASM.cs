@@ -35,7 +35,30 @@ namespace MicroVASMDotNET
                         continue;
                     }
 
-                    field += c;
+                    if (c == '\'')
+                    {
+                        field += c;
+                        j++;
+                        while (j < line.Length && line[j] != '\'')
+                        {
+                            field += line[j];
+                            j++;
+                        }
+                    }
+
+
+                    if (c == '\"')
+                    {
+                        field += c;
+                        j++;
+                        while (j < line.Length && line[j] != '\"')
+                        {
+                            field += line[j];
+                            j++;
+                        }
+                    }
+
+                    field += line[j];
 
                     // Check if it is the last character, othwerise it wouldn't add the last field
                     // unless the line has at least a space at the end.
@@ -56,9 +79,9 @@ namespace MicroVASMDotNET
         }
 
 
-        public static byte[] Compile(VASMCodeData codeData, MicroVASMVersion microVASMVersion)
+        public static CompilerResult Compile(VASMCodeData codeData, MicroVASMVersion microVASMVersion, bool is64Bit)
         {
-            MicroVASMBaseCompiler compiler = CreateCompiler(microVASMVersion);
+            MicroVASMBaseCompiler compiler = CreateCompiler(microVASMVersion, is64Bit);
 
             compiler.StartPreProcessing();
 
@@ -74,12 +97,12 @@ namespace MicroVASMDotNET
         }
 
 
-        private static MicroVASMBaseCompiler CreateCompiler(MicroVASMVersion microVASMVersion)
+        private static MicroVASMBaseCompiler CreateCompiler(MicroVASMVersion microVASMVersion, bool is64Bit)
         {
             switch (microVASMVersion)
             {
                 case MicroVASMVersion.V1_0:
-                    return new MicroVASMCompiler_1_0();
+                    return new MicroVASMCompiler_1_0(is64Bit);
                 default:
                     return null;
             }

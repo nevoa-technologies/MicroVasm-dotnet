@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MicroVASMDotNET.Compilers.Instructions
 {
-    public class InstructionLDI : IInstruction, IInstruction<ISpecRegisters>, IInstruction<ISpecTypes>
+    public class InstructionLDI : IInstruction, IInstruction<ISpecRegisters>, IInstruction<ISpecTypes>, IInstruction<ISpecReferences>
     {
         public string Name => "LDI";
 
@@ -15,6 +15,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
         {
             ISpecRegisters registers = (ISpecRegisters)compiler;
             ISpecTypes types = (ISpecTypes)compiler;
+            ISpecReferences references = (ISpecReferences)compiler;
 
             if (instruction.Parameters.Count != 3)
             {
@@ -24,9 +25,15 @@ namespace MicroVASMDotNET.Compilers.Instructions
 
             if (registers.GetRegister(instruction.Parameters[0], out byte register))
             {
-                if (types.GetTypeSize(instruction.Parameters[1], out byte size) && types.GetTypeValue(instruction.Parameters[1], out ValueType type))
+                if (types.GetTypeSize(instruction.Parameters[1], out int size) && types.GetTypeValue(instruction.Parameters[1], out ValueType type))
                 {
                     byte[] bytes = compiler.ParseValue(instruction.Parameters[2], type, out bool isNegativeInt);
+
+                    if (size > compiler.MaxTypeSize)
+                    {
+                        compiler.ThrowError(instruction, "LDI instruction must have a type with a size not bigger than " + compiler.MaxTypeSize + ".");
+                        return new byte[] { 0 };
+                    }
 
                     if (bytes != null)
                     {
@@ -35,9 +42,20 @@ namespace MicroVASMDotNET.Compilers.Instructions
                         List<byte> result = new List<byte>();
                         result.Add(OPCode);
                         result.Add(register);
-                        result.Add(size);
+                        result.Add((byte) size);
 
                         result.AddRange(bytes);
+                        return result.ToArray();
+                    }
+
+
+                    if (references.SetDefinitionBlock(instruction, instruction.Parameters[2], 3, 4))
+                    {
+                        List<byte> result = new List<byte>();
+                        result.Add(OPCode);
+                        result.Add(register);
+                        result.Add((byte)4);
+                        result.AddRange(new byte[4]);
                         return result.ToArray();
                     }
 

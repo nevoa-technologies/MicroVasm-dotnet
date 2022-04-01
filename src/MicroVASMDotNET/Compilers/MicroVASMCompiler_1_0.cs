@@ -3,7 +3,9 @@ using MicroVASMDotNET.Compilers.PreProcessing;
 using MicroVASMDotNET.Compilers.Specifications;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using static MicroVASMDotNET.Compilers.PreProcessing.PreProcessorDefinitions;
 
 namespace MicroVASMDotNET.Compilers
 {
@@ -22,13 +24,17 @@ namespace MicroVASMDotNET.Compilers
         private PreProcessorDefinitions definitionsPreProcessor = new PreProcessorDefinitions();
 
         private List<byte[]> generatedInstructions = new List<byte[]>();
+        private string[] functionNames;
 
         private List<PostProcessData> postProcessReferences = new List<PostProcessData>();
         private List<PostDefinitionData> postProcessDefinitions = new List<PostDefinitionData>();
 
+        private byte minRegisters = 7;
 
-        public MicroVASMCompiler_1_0()
+
+        public MicroVASMCompiler_1_0(bool is64Bit) : base(is64Bit)
         {
+
             DeclareInstruction<InstructionEOP>();
             DeclareInstruction<InstructionLDR>();
             DeclareInstruction<InstructionSTR>();
@@ -54,7 +60,13 @@ namespace MicroVASMDotNET.Compilers
             DeclareInstruction<InstructionLSL>();
             DeclareInstruction<InstructionLSR>();
             DeclareInstruction<InstructionXOR>();
+            DeclareInstruction<InstructionINC>();
+            DeclareInstruction<InstructionDEC>();
 
+            DeclareInstruction<InstructionPUSH>();
+            DeclareInstruction<InstructionPOP>();
+            DeclareInstruction<InstructionLADR>();
+            
             InitVariableTypes();
             InitComparsionCodes();
         }
@@ -72,8 +84,6 @@ namespace MicroVASMDotNET.Compilers
             TypeSizes.Add("UINT16", 2);
             TypeSizes.Add("UINT32", 4);
             TypeSizes.Add("UINT64", 8);
-            TypeSizes.Add("FLOAT", 4);
-            TypeSizes.Add("DOUBLE", 8);
 
             TypeValueTypes = new Dictionary<string, ValueType>();
 
@@ -85,8 +95,6 @@ namespace MicroVASMDotNET.Compilers
             TypeValueTypes.Add("UINT16", ValueType.Integer);
             TypeValueTypes.Add("UINT32", ValueType.Integer);
             TypeValueTypes.Add("UINT64", ValueType.Integer);
-            TypeValueTypes.Add("FLOAT", ValueType.Float);
-            TypeValueTypes.Add("DOUBLE", ValueType.Double);
         }
 
 
@@ -111,6 +119,9 @@ namespace MicroVASMDotNET.Compilers
 
                 if (Byte.TryParse(name, out register))
                 {
+                    if (register + 1 > minRegisters)
+                        minRegisters = (byte) (register + 1);
+
                     return true;
                 }
             }
@@ -119,13 +130,18 @@ namespace MicroVASMDotNET.Compilers
                 register = 5;
                 return true;
             }
+            else if (name.Equals("MP"))
+            {
+                register = 6;
+                return true;
+            }
 
             register = 0;
             return false;
         }
         
 
-        public bool GetTypeSize(string name, out byte size)
+        public bool GetTypeSize(string name, out int size)
         {
             if (TypeSizes.ContainsKey(name))
             {
@@ -135,7 +151,27 @@ namespace MicroVASMDotNET.Compilers
 
             size = 0;
 
-            if (byte.TryParse(name, out byte i))
+            if (int.TryParse(name, out int i))
+            {
+                size = i;
+                return true;
+            }
+
+            return false;
+        }
+
+
+        public bool GetTypeSizeDef(string name, out uint size)
+        {
+            if (TypeSizes.ContainsKey(name))
+            {
+                size = TypeSizes[name];
+                return true;
+            }
+
+            size = 0;
+
+            if (uint.TryParse(name, out uint i))
             {
                 size = i;
                 return true;
@@ -175,7 +211,7 @@ namespace MicroVASMDotNET.Compilers
         }
 
 
-        public override byte[] Generate()
+        public override CompilerResult Generate()
         {
             List<byte> result = new List<byte>();
             
@@ -241,7 +277,94 @@ namespace MicroVASMDotNET.Compilers
 
             result.Add(0);
 
-            return result.ToArray();
+            CompilerResult compilerResult = new CompilerResult();
+            compilerResult.Result = result.ToArray();
+            compilerResult.ExternalFunctionsCount = functionNames.Length;
+
+
+            // Calculate the size of the memory used by function names.
+            // We add +1 because of the \0 at the end of each name.
+            int functionNamesLength = functionNames.Sum(f => f.Length + 1);
+
+            compilerResult.MemoryFunctionNamesUsage = functionNamesLength;
+
+            var scopeCallTrees = definitionsPreProcessor.BuildScopeCallTrees();
+            var rootScope = scopeCallTrees.Keys.ElementAt(0);
+
+            int minScopesCount = 1;
+            int stackMemoryUsage = GetCallMemorySize(scopeCallTrees, rootScope, 0, ref minScopesCount);
+            compilerResult.MinStackUsage = stackMemoryUsage;
+            compilerResult.MinScopesCount = minScopesCount;
+
+            compilerResult.MemoryDynamicUsage = definitionsPreProcessor.GetDynamicMemoryUsage(out bool freedAll);
+
+            if (!freedAll)
+            {
+                ThrowError(null, "There is memory that is not being freed correctly.");
+            }
+
+            compilerResult.HasErrors = CompileErrors.Count > 0;
+            compilerResult.MinRegisters = minRegisters;
+
+            return compilerResult;
+        }
+
+
+        int GetCallMemorySize(Dictionary<ScopeInfo, Stack<ScopeInfo>> scopeCallTree, ScopeInfo scope, int currentSize, ref int scopeStackCount)
+        {
+            int currentMaxSize = 0;
+            int maxStackCount = 0;
+
+            var stack = scopeCallTree[scope];
+
+            // Check if it this function is being called by one of its childs.
+            HashSet<ScopeInfo> childScopes = new HashSet<ScopeInfo>();
+            Stack<ScopeInfo> scopesToCheck = new Stack<ScopeInfo>();
+
+            foreach (var scopeCall in stack)
+            {
+                childScopes.Add(scopeCall);
+                scopesToCheck.Push(scopeCall);
+            }
+
+            while (scopesToCheck.Count > 0)
+            {
+                ScopeInfo s = scopesToCheck.Pop();
+
+                foreach (var scopeCall in scopeCallTree[s])
+                {
+                    if (childScopes.Contains(scopeCall))
+                        break;
+
+                    childScopes.Add(scopeCall);
+                    scopesToCheck.Push(scopeCall);
+                }
+            }
+
+            if (childScopes.Contains(scope))
+            {
+                ThrowError(null, "You cannot call scopes recursively. '" + scope.Name + "' is being called by itself or other scope recursively.");
+                scopeStackCount = scopeStackCount + maxStackCount;
+                return 0;
+            }
+
+
+            foreach (var scopeCall in stack)
+            {
+                int stackCount = 1;
+                int callSize = GetCallMemorySize(scopeCallTree, scopeCall, currentSize, ref stackCount);
+
+                if (callSize > currentMaxSize)
+                    currentMaxSize = callSize;
+
+                if (stackCount > maxStackCount)
+                    maxStackCount = stackCount;
+            }
+
+            scopeStackCount = scopeStackCount + maxStackCount;
+
+
+            return currentSize + currentMaxSize + scope.GetDefinitionsDataSize();
         }
 
 
@@ -253,7 +376,7 @@ namespace MicroVASMDotNET.Compilers
             byte[] major = BitConverter.GetBytes(versionMajor).AsLittleEndian();
             byte[] minor = BitConverter.GetBytes(versionMinor).AsLittleEndian();
 
-            string[] functionNames = functionPreProcessor.BuildFunctionNamesArray();
+            functionNames = functionPreProcessor.BuildFunctionNamesArray();
             byte[] functionsCount = BitConverter.GetBytes((UInt32) functionNames.Length);
 
             List<byte> result = new List<byte>();
