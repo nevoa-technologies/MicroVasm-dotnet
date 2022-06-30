@@ -7,7 +7,7 @@ A .NET implementation of an assembly language compiler for [MicroVE](https://git
 Build the console project and create a `main.vasm` on the output build folder.
 
 # Example
-This example will print numbers from 1 to 10. You must have a print function on your MicroVE VM.
+This example will call the function 'print' 10 times. You must have a print function on your MicroVE VM.
 ```asm
 FUNCTION print
 
