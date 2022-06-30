@@ -24,7 +24,7 @@ namespace MicroVASMDotNET
             builder.AppendLine("Memory Usage of Function Names:    " + MemoryFunctionNamesUsage);
             builder.AppendLine("Memory Usage of Dynamic Stack:     " + MemoryDynamicUsage);
             builder.AppendLine("Data Stack Usage:                  " + MinStackUsage);
-            builder.AppendLine("Highest Register:                  " + MinRegisters);
+            builder.AppendLine("Highest Register:                  " + (MinRegisters - 1));
             return builder.ToString();
         }
     }
