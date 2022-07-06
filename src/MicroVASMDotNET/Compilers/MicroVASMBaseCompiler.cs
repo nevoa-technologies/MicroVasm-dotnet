@@ -164,7 +164,7 @@ namespace MicroVASMDotNET.Compilers
         }
 
 
-        public byte[] FitDataInSize(VASMInstructionData instruction, byte[] data, bool isNegativeInt, int size, bool showWarnings = true)
+        public byte[] FitDataInSize(VASMInstructionData instruction, byte[] data, bool isNegativeInt, bool isUnsigned, int size, bool showWarnings = true)
         {
             List<byte> finalBytes = new List<byte>(data);
 
@@ -174,13 +174,20 @@ namespace MicroVASMDotNET.Compilers
                 else
                     finalBytes.Add(0x00);
 
-            for (int i = size; i < finalBytes.Count; i++)
+            if (!isUnsigned && !isNegativeInt && finalBytes[size - 1] >= 0b10000000)
+                ThrowWarning(instruction, "Value is bigger than its storage size.");
+            else if (!isUnsigned && isNegativeInt && finalBytes[size - 1] <= 0b10000000)
+                ThrowWarning(instruction, "Value is bigger than its storage size.");
+            else
             {
-                if ((isNegativeInt && finalBytes[i] != 0xFF) || (!isNegativeInt && finalBytes[i] != 0))
+                for (int i = size; i < finalBytes.Count; i++)
                 {
-                    if (showWarnings)
-                        ThrowWarning(instruction, "Value is bigger than its storage size.");
-                    break;
+                    if ((isNegativeInt && finalBytes[i] != 0xFF) || (!isNegativeInt && finalBytes[i] != 0) || (isUnsigned && isNegativeInt))
+                    {
+                        if (showWarnings)
+                            ThrowWarning(instruction, "Value is bigger than its storage size.");
+                        break;
+                    }
                 }
             }
 

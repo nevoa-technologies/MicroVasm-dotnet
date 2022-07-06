@@ -26,6 +26,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
 
             byte register;
             int size;
+            bool isUnsigned;
 
             if (!registers.GetRegister(instruction.Parameters[0], out register))
             {
@@ -33,7 +34,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
                 return new byte[] { 0 };
             }
 
-            if (!types.GetTypeSize(instruction.Parameters[2], out size))
+            if (!types.GetTypeSize(instruction.Parameters[2], out size, out isUnsigned))
             {
                 compiler.ThrowError(instruction, "LDS instruction must have a type in the third parameter. The third parameter is not a type or a size.");
                 return new byte[] { 0 };
@@ -60,7 +61,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
             }
             else
             {
-                value = compiler.FitDataInSize(instruction, value, isNegativeInt, size, false);
+                value = compiler.FitDataInSize(instruction, value, isNegativeInt, isUnsigned, size, false);
             }
 
             List<byte> result = new List<byte>();

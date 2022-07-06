@@ -25,7 +25,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
 
             if (registers.GetRegister(instruction.Parameters[0], out byte register))
             {
-                if (types.GetTypeSize(instruction.Parameters[1], out int size) && types.GetTypeValue(instruction.Parameters[1], out ValueType type))
+                if (types.GetTypeSize(instruction.Parameters[1], out int size, out bool isUnsigned) && types.GetTypeValue(instruction.Parameters[1], out ValueType type))
                 {
                     byte[] bytes = compiler.ParseValue(instruction.Parameters[2], type, out bool isNegativeInt);
 
@@ -37,7 +37,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
 
                     if (bytes != null)
                     {
-                        bytes = compiler.FitDataInSize(instruction, bytes, isNegativeInt, size);
+                        bytes = compiler.FitDataInSize(instruction, bytes, isNegativeInt, isUnsigned, size);
 
                         List<byte> result = new List<byte>();
                         result.Add(OPCode);

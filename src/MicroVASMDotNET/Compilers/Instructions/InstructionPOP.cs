@@ -32,7 +32,7 @@ namespace MicroVASMDotNET.Compilers.Instructions
                 return new byte[] { 0 };
             }
 
-            if (!types.GetTypeSize(instruction.Parameters[1], out size))
+            if (!types.GetTypeSize(instruction.Parameters[1], out size, out bool isUnsigned))
             {
                 compiler.ThrowError(instruction, "POP instruction must have a type in the third parameter. The third parameter is not a type or a size.");
                 return new byte[] { 0 };

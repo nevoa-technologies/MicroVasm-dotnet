@@ -141,15 +141,18 @@ namespace MicroVASMDotNET.Compilers
         }
         
 
-        public bool GetTypeSize(string name, out int size)
+        public bool GetTypeSize(string name, out int size, out bool isUnsigned)
         {
             if (TypeSizes.ContainsKey(name))
             {
+                isUnsigned = name.StartsWith("U");
+
                 size = TypeSizes[name];
                 return true;
             }
 
             size = 0;
+            isUnsigned = true;
 
             if (int.TryParse(name, out int i))
             {
@@ -383,7 +386,8 @@ namespace MicroVASMDotNET.Compilers
             result.AddRange(major);
             result.AddRange(minor);
             result.AddRange(functionsCount);
-            result.AddRange(Encoding.ASCII.GetBytes(String.Join("\0", functionNames) + '\0'));
+            if (functionNames.Length > 0)
+                result.AddRange(Encoding.ASCII.GetBytes(String.Join("\0", functionNames) + '\0'));
             result.AddRange(definitionsPreProcessor.GetScopeMemory(0));
 
             currentBytecodeLength = (UInt32) result.Count;

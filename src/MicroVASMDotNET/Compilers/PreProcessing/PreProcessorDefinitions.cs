@@ -108,14 +108,14 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
             }
             else if (instruction.Instruction == "PUSH")
             {
-                if (instruction.Parameters.Count >= 2 && types.GetTypeSize(instruction.Parameters[1], out int size))
+                if (instruction.Parameters.Count >= 2 && types.GetTypeSize(instruction.Parameters[1], out int size, out bool isUnsigned))
                 {
                     scopesStack.Peek().MemoryTrace.Enqueue(new MemoryTrace(size));
                 }
             }
             else if (instruction.Instruction == "POP")
             {
-                if (instruction.Parameters.Count >= 2 && types.GetTypeSize(instruction.Parameters[1], out int size))
+                if (instruction.Parameters.Count >= 2 && types.GetTypeSize(instruction.Parameters[1], out int size, out bool isUnsigned))
                 {
                     scopesStack.Peek().MemoryTrace.Enqueue(new MemoryTrace(-size));
                 }
@@ -230,10 +230,11 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
 
                 DefinitionInfo definition = new DefinitionInfo(instruction.Parameters[1]);
 
-                if (types.GetTypeSize(instruction.Parameters[0], out int typeSize) && types.GetTypeValue(instruction.Parameters[0], out ValueType type))
+                if (types.GetTypeSize(instruction.Parameters[0], out int typeSize, out bool isUnsigned) && types.GetTypeValue(instruction.Parameters[0], out ValueType type))
                 {
                     definition.Type = type;
                     definition.Size = typeSize;
+                    definition.IsUnsigned = isUnsigned;
                 }
                 else
                 {
@@ -253,7 +254,7 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
                     return;
                 }
 
-                definition.Value = compiler.FitDataInSize(instruction, bytes, isNegativeInt, definition.Size);
+                definition.Value = compiler.FitDataInSize(instruction, bytes, isNegativeInt, definition.IsUnsigned, definition.Size);
 
                 if (scopesStack.Peek().DefinitionsCount > 0)
                     definition.Index = scopesStack.Peek().LastDefinition.Index + scopesStack.Peek().LastDefinition.Size;
@@ -546,6 +547,7 @@ namespace MicroVASMDotNET.Compilers.PreProcessing
         {
             public string Name { get; }
             public int Size { get; set; }
+            public bool IsUnsigned { get; set; } = true;
             public byte[] Value { get; set; }
             public int Index { get; set; }
             public ValueType Type { get; set; }
